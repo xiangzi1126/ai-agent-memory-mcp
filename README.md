@@ -5,7 +5,7 @@
 ## 架构
 - **SQLite**:结构化主源(CRUD + FTS5 关键词检索)
 - **Chroma 嵌入式**:向量检索(持久化到 `.ai-memory/chroma/`)
-- **火山 doubao-embedding**:OpenAI 兼容 `/api/v3/embeddings`,复用 `VOLCENGINE_API_KEY`
+- **Embedding**:任意 OpenAI 兼容服务(火山方舟 / 硅基流动 / OpenAI / 其他),默认火山 `doubao-embedding-vision`;见下文配置
 - **Markdown 镜像**:每条记忆同步写 `.ai-memory/memories/<category>/<id>.md`,人工可读可编辑
 
 三层用 `id` 关联。记忆存于**各项目的 `.ai-memory/` 目录**,跟项目走;不同 Agent 连同一项目时共享同一记忆库,`source_agent` 戳区分写入者。
@@ -20,22 +20,69 @@
 
 ## 安装
 ```powershell
-cd D:\agent\study\ai_memory_mcp
+cd <clone 目录>\ai_memory_mcp
 python -m pip install -r requirements.txt
 ```
 
-## 配置
-项目根 `.env` 中配置火山方舟 key(同 llmwiki_knowledge_base):
+## 配置 Embedding(任意 OpenAI 兼容服务)
+
+ai-memory 的 embedding 层是通用 OpenAI 兼容客户端,**火山方舟 / 硅基流动 / OpenAI / 任何兼容服务都能用**。首次运行会在 `.ai-memory/config.yml` 生成默认配置,按需修改即可。
+
+### 配置字段(`.ai-memory/config.yml` 的 `embedding` 段)
+| 字段 | 说明 |
+|---|---|
+| `provider` | 标识(仅记录用,不影响逻辑) |
+| `model` | embedding 模型名 |
+| `base_url` | OpenAI 兼容端点 |
+| `api_key_env` | 读哪个环境变量拿 key |
+| `dim` | 向量维度(须与模型一致) |
+
+在项目根 `.env` 配对应 key,再改 `config.yml` 的 `embedding` 段。
+
+### 示例
+
+**火山方舟 doubao-embedding-vision**(默认;Agent/Coding Plan 须走 Plan 端点 `/api/plan/v3`,标准 `/api/v3` 会 401)
+```yaml
+embedding:
+  provider: volcengine
+  model: doubao-embedding-vision
+  base_url: https://ark.cn-beijing.volces.com/api/plan/v3
+  api_key_env: VOLCENGINE_API_KEY
+  dim: 2048
 ```
-VOLCENGINE_API_KEY=<你的方舟 API Key>
+`.env`:`VOLCENGINE_API_KEY=...`
+
+**硅基流动 bge-large-zh**(中文文本专精)
+```yaml
+embedding:
+  provider: siliconflow
+  model: BAAI/bge-large-zh-v1.5
+  base_url: https://api.siliconflow.cn/v1
+  api_key_env: SILICONFLOW_API_KEY
+  dim: 1024
 ```
-默认 embedding:火山方舟 `doubao-embedding-vision`(2048 维,Agent Plan 可用,纯文本亦可)。**关键:须走 Plan 端点 `/api/plan/v3`**(标准 `/api/v3` 会 401,因 Agent Plan key 只授权 Plan 端点)。若想切硅基流动 `bge-large-zh`(文本专精,1024 维)或 OpenAI,改 `.ai-memory/config.yml` 的 model/base_url/api_key_env/dim。
+`.env`:`SILICONFLOW_API_KEY=...`
+
+**OpenAI**
+```yaml
+embedding:
+  provider: openai
+  model: text-embedding-3-small
+  base_url: https://api.openai.com/v1
+  api_key_env: OPENAI_API_KEY
+  dim: 1536
+```
+`.env`:`OPENAI_API_KEY=...`
+
+**任何其他 OpenAI 兼容服务**:填对应 `base_url` / `model` / `api_key_env` / `dim` 即可。
+
+> 切换 embedding 模型后,旧向量维度可能不匹配;清空 `.ai-memory/chroma/` 重新 `remember` 重建索引。
 
 ## 接入 Claude Code(user scope,所有项目共用代码、各自项目数据)
 ```powershell
-claude mcp add ai-memory -s user -e PYTHONPATH=D:\agent\study\ai_memory_mcp -- python -m ai_memory --agent claude-code --project-from-cwd
+claude mcp add ai-memory -s user -e PYTHONPATH=<clone 目录>\ai_memory_mcp -- python -m ai_memory --agent claude-code --project-from-cwd
 ```
-Qoder / Cursor 同理,改 `--agent` 即可。
+`<clone 目录>` 换成你 clone 的实际路径。Qoder / Cursor 同理,改 `--agent` 即可。
 
 ## MCP 工具
 - `remember(title, content, category, tags?, scope?)` - 存记忆(三处同步,自动 embed)
