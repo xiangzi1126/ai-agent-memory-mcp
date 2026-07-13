@@ -15,4 +15,4 @@ venv/
 logs/
 
 # 本地特定脚本(含用户特定内容/绝对路径,不分享)
-tests/seed_memories.py
+tests/seed_*.py
