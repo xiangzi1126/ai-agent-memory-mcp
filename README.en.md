@@ -6,7 +6,7 @@
 
 [中文](README.md) | [日本語](README.ja.md)
 
-An agent-independent persistent memory layer exposed as an MCP Server. Reusable from any MCP client — Claude Code / Qoder / Cursor.
+Agent-agnostic persistent memory exposed as an MCP Server. Local-first - memories travel with your project in `.ai-memory/` and are shared across any MCP client (Claude Code / Qoder / Cursor).
 
 ## Architecture
 - **SQLite**: structured source of truth (CRUD + FTS5 keyword search)

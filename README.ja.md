@@ -6,7 +6,7 @@
 
 [中文](README.md) | [English](README.en.md)
 
-特定のエージェントに依存しない永続メモリレイヤー。MCP サーバーとして提供され、Claude Code / Qoder / Cursor など任意の MCP クライアントから再利用可能。
+特定のエージェントに依存しない永続メモリレイヤー(MCP サーバー)。Local-first - 記憶はプロジェクトの `.ai-memory/` に保存され、Claude Code / Qoder / Cursor 間で共有されます。
 
 ## アーキテクチャ
 - **SQLite**: 構造化主ソース(CRUD + FTS5 キーワード検索)
