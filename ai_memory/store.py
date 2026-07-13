@@ -160,3 +160,9 @@ class Store:
     def all_ids(self) -> list[str]:
         with self._conn() as c:
             return [r["id"] for r in c.execute("SELECT id FROM memories").fetchall()]
+
+    def find_by_title(self, title: str) -> Memory | None:
+        """按精确标题查找(供 [[link]] 解析)。"""
+        with self._conn() as c:
+            row = c.execute("SELECT * FROM memories WHERE title = ?", (title,)).fetchone()
+            return self._row_to_memory(row) if row else None

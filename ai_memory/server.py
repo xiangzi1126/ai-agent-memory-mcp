@@ -11,6 +11,7 @@ from typing import Any
 from mcp.server.fastmcp import FastMCP
 
 from .config import MemoryConfig, find_project_root
+from .links import resolve_links
 from .markdown import delete_markdown, write_markdown
 from .schema import Category, Memory, Scope
 from .search import hybrid_search
@@ -23,6 +24,7 @@ mcp = FastMCP(
         "Call remember() when the user says '记住/记下/沉淀/保存' a decision or fact; "
         "call recall() when the user asks '之前/上次/有没有记录/回忆/召回/历史决策/踩过的坑/接手须知'. "
         "Memory categories: user (preferences) / project (knowledge) / process (work) / agent (handoff). "
+        "Memories may reference each other via [[title]] links; recall/get_memory return a 'links' field. "
         "Call who_am_i() at session start to learn the current agent and memory overview."
     ),
 )
@@ -148,7 +150,8 @@ def remember(
 ) -> dict:
     """存储一条持久化记忆(SQLite+Chroma+Markdown 三处同步,自动 embed)。
 
-    当用户说"记住 / 记下 / 沉淀 / 保存"某条信息时调用。
+    当用户说"记住 / 记下 / 沉淀 / 保存"某条信息时调用。content 中可用
+    [[其他记忆标题]] 引用已有记忆,recall 时会解析为关联记忆。
     category:user(用户偏好)/ project(项目知识)/ process(工作过程)/ agent(Agent 协作)。
     scope:user / project / session。
     """
@@ -164,19 +167,31 @@ def remember(
 
 @mcp.tool()
 def recall(query: str, category: str | None = None, top_k: int = 5) -> list[dict]:
-    """语义 + 关键词 + 标题三路融合检索,返回最相关记忆(含正文)。
+    """语义 + 关键词 + 标题三路融合检索,返回最相关记忆(含正文 + [[link]] 关联)。
 
     当用户问"之前 / 上次 / 有没有记录 / 回忆 / 召回 / 历史决策 / 踩过的坑"时调用。
+    每条记忆若 content 含 [[其他记忆标题]],返回时附 links 字段(关联记忆 id/title/category)。
     """
-    mems = _svc().recall(query, category=category, top_k=top_k)
-    return [m.model_dump(mode="json") for m in mems]
+    svc = _svc()
+    mems = svc.recall(query, category=category, top_k=top_k)
+    result = []
+    for m in mems:
+        d = m.model_dump(mode="json")
+        d["links"] = resolve_links(m.content, svc.store)
+        result.append(d)
+    return result
 
 
 @mcp.tool()
 def get_memory(id: str) -> dict:
-    """按 id 取单条记忆的完整内容。已知具体 id 时调用。"""
-    mem = _svc().store.get(id)
-    return mem.model_dump(mode="json") if mem else {"error": "not found", "id": id}
+    """按 id 取单条记忆的完整内容(含 [[link]] 关联)。已知具体 id 时调用。"""
+    svc = _svc()
+    mem = svc.store.get(id)
+    if not mem:
+        return {"error": "not found", "id": id}
+    d = mem.model_dump(mode="json")
+    d["links"] = resolve_links(mem.content, svc.store)
+    return d
 
 
 @mcp.tool()
