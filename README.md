@@ -1,5 +1,9 @@
 # AI Memory MCP Server
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Python 3.11+](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://www.python.org/)
+[![MCP](https://img.shields.io/badge/MCP-Server-purple.svg)](https://modelcontextprotocol.io/)
+
 [English](README.en.md) | [日本語](README.ja.md)
 
 独立于具体 Agent 的持久化记忆层,以 MCP Server 形式提供。可被 Claude Code / Qoder / Cursor 等任何 MCP 客户端复用。

@@ -16,7 +16,16 @@ from .schema import Category, Memory, Scope
 from .search import hybrid_search
 from .store import Store
 
-mcp = FastMCP("ai-memory")
+mcp = FastMCP(
+    "ai-memory",
+    instructions=(
+        "Persistent memory layer across sessions and agents (Claude Code / Qoder / Cursor). "
+        "Call remember() when the user says '记住/记下/沉淀/保存' a decision or fact; "
+        "call recall() when the user asks '之前/上次/有没有记录/回忆/召回/历史决策/踩过的坑/接手须知'. "
+        "Memory categories: user (preferences) / project (knowledge) / process (work) / agent (handoff). "
+        "Call who_am_i() at session start to learn the current agent and memory overview."
+    ),
+)
 
 _service: "MemoryService | None" = None
 
@@ -137,9 +146,10 @@ def remember(
     tags: list[str] | None = None,
     scope: str = "project",
 ) -> dict:
-    """存储一条持久化记忆(SQLite+Chroma+Markdown 三处同步)。
+    """存储一条持久化记忆(SQLite+Chroma+Markdown 三处同步,自动 embed)。
 
-    category:user(用户偏好)/ project(项目知识)/ process(工作过程)/ agent(Agent协作)。
+    当用户说"记住 / 记下 / 沉淀 / 保存"某条信息时调用。
+    category:user(用户偏好)/ project(项目知识)/ process(工作过程)/ agent(Agent 协作)。
     scope:user / project / session。
     """
     mem = _svc().remember(title, content, category, tags, scope)
@@ -154,14 +164,17 @@ def remember(
 
 @mcp.tool()
 def recall(query: str, category: str | None = None, top_k: int = 5) -> list[dict]:
-    """语义+关键词混合检索,返回最相关的若干条记忆(含正文)。"""
+    """语义 + 关键词 + 标题三路融合检索,返回最相关记忆(含正文)。
+
+    当用户问"之前 / 上次 / 有没有记录 / 回忆 / 召回 / 历史决策 / 踩过的坑"时调用。
+    """
     mems = _svc().recall(query, category=category, top_k=top_k)
     return [m.model_dump(mode="json") for m in mems]
 
 
 @mcp.tool()
 def get_memory(id: str) -> dict:
-    """按 id 取单条记忆的完整内容。"""
+    """按 id 取单条记忆的完整内容。已知具体 id 时调用。"""
     mem = _svc().store.get(id)
     return mem.model_dump(mode="json") if mem else {"error": "not found", "id": id}
 
@@ -173,7 +186,7 @@ def search_memories(
     agent: str | None = None,
     limit: int = 50,
 ) -> list[dict]:
-    """按分类/标签/来源 Agent 结构化过滤记忆(不含正文)。"""
+    """按分类 / 标签 / 来源 Agent 结构化过滤(不含正文)。需精确筛选时调用。"""
     mems = _svc().store.search(category=category, tag=tag, agent=agent, limit=limit)
     return [_brief(m) for m in mems]
 
@@ -187,28 +200,28 @@ def update_memory(
     category: str | None = None,
     scope: str | None = None,
 ) -> dict:
-    """更新已有记忆;改 content 会重算向量并刷新 Markdown。"""
+    """更新已有记忆;改 content 会重算向量并刷新 Markdown。修改 / 补充已有记忆时调用。"""
     mem = _svc().update(id, title, content, tags, category, scope)
     return mem.model_dump(mode="json") if mem else {"error": "not found", "id": id}
 
 
 @mcp.tool()
 def forget(id: str) -> dict:
-    """删除一条记忆(SQLite+Chroma+Markdown 三处同步)。"""
+    """删除一条记忆(SQLite+Chroma+Markdown 三处同步)。用户要求"删掉 / 忘掉"某条记忆时调用。"""
     ok = _svc().forget(id)
     return {"id": id, "deleted": ok}
 
 
 @mcp.tool()
 def list_memories(category: str | None = None) -> list[dict]:
-    """列出记忆(可按分类过滤),按更新时间倒序(不含正文)。"""
+    """列出记忆(可按分类过滤),按更新时间倒序(不含正文)。浏览 / 概览已有记忆时调用。"""
     mems = _svc().store.list(category=category)
     return [_brief(m) for m in mems]
 
 
 @mcp.tool()
 def who_am_i() -> dict:
-    """返回当前 Agent 标识、项目根、数据目录与各分类记忆数量(上手时先调用)。"""
+    """返回当前 Agent 标识、项目根、数据目录与各分类记忆数量。会话开始时先调用,了解当前 agent 与记忆库概况。"""
     svc = _svc()
     counts = {cat: len(svc.store.list(category=cat)) for cat in ("user", "project", "process", "agent")}
     return {

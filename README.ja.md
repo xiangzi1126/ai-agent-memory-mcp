@@ -1,5 +1,9 @@
 # AI Memory MCP Server
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Python 3.11+](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://www.python.org/)
+[![MCP](https://img.shields.io/badge/MCP-Server-purple.svg)](https://modelcontextprotocol.io/)
+
 [中文](README.md) | [English](README.en.md)
 
 特定のエージェントに依存しない永続メモリレイヤー。MCP サーバーとして提供され、Claude Code / Qoder / Cursor など任意の MCP クライアントから再利用可能。
