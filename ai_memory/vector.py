@@ -24,7 +24,7 @@ class VectorStore:
         self._embedder = embedder
 
     def upsert(self, mem: Memory) -> None:
-        vec = self._embedder.embed_one(mem.content)
+        vec = self._embedder.embed_one(mem.embed_text())
         self._col.upsert(
             ids=[mem.id],
             documents=[mem.content],

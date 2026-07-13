@@ -1,5 +1,7 @@
 # AI Memory MCP Server
 
+[English](README.en.md) | [日本語](README.ja.md)
+
 独立于具体 Agent 的持久化记忆层,以 MCP Server 形式提供。可被 Claude Code / Qoder / Cursor 等任何 MCP 客户端复用。
 
 ## 架构
@@ -76,7 +78,15 @@ embedding:
 
 **任何其他 OpenAI 兼容服务**:填对应 `base_url` / `model` / `api_key_env` / `dim` 即可。
 
-> 切换 embedding 模型后,旧向量维度可能不匹配;清空 `.ai-memory/chroma/` 重新 `remember` 重建索引。
+> 切换 embedding 模型后,旧向量维度可能不匹配;清空 `.ai-memory/chroma/` 重新 `remember`,或跑 `python tests/rebuild_vectors.py`。
+
+## 检索机制
+`recall` 用三路融合检索,提升命中率:
+- **向量检索**(权重 0.6):Chroma cosine;embedding 内容为 `title + tags + content` 拼接,标题/标签信息进入向量
+- **关键词检索**(权重 0.25):SQLite FTS5 trigram
+- **标题/标签匹配**(权重 0.15):查询词出现在标题(+0.15)或标签(+0.075)时加分
+
+候选扩大到 `top_k*3`,三路融合后取 `top_k`。
 
 ## 接入 Claude Code(user scope,所有项目共用代码、各自项目数据)
 ```powershell
@@ -86,7 +96,7 @@ claude mcp add ai-memory -s user -e PYTHONPATH=<clone 目录>\ai_memory_mcp -- p
 
 ## MCP 工具
 - `remember(title, content, category, tags?, scope?)` - 存记忆(三处同步,自动 embed)
-- `recall(query, category?, top_k=5)` - 混合检索(向量 + 关键词加权)
+- `recall(query, category?, top_k=5)` - 混合检索(向量 + 关键词 + 标题匹配)
 - `get_memory(id)` - 取单条
 - `search_memories(category?, tag?, agent?)` - 结构化过滤
 - `update_memory(id, ...)` - 更新(重算 embed + 刷新 md)

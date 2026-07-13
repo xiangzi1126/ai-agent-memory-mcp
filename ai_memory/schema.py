@@ -93,3 +93,11 @@ class Memory(BaseModel):
             "created_at": self.created_at,
             "updated_at": self.updated_at,
         }
+
+    def embed_text(self) -> str:
+        """用于 embedding 的拼接文本(标题+标签+正文),让标题/标签信息进入向量。"""
+        parts = [self.title]
+        if self.tags:
+            parts.append(" ".join(self.tags))
+        parts.append(self.content)
+        return "\n".join(parts)
