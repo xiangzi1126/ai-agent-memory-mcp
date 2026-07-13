@@ -1,0 +1,9 @@
+# AI Memory MCP Server - 独立于具体 Agent 的持久化记忆层
+# 安装:pip install -r requirements.txt (mcp/pydantic/pyyaml/openai/python-dotenv 多已装,主要装 chromadb)
+
+chromadb>=0.5.0
+mcp>=1.0.0
+pydantic>=2.0.0
+pyyaml>=6.0
+openai>=1.0.0
+python-dotenv>=1.0.0

@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.venv/
+venv/
+
+# 环境与密钥
+.env
+.env.*
+
+# 记忆数据(运行时生成,不入库)
+.ai-memory/
+logs/
+
+# 本地特定脚本(含用户特定内容/绝对路径,不分享)
+tests/seed_memories.py
