@@ -1,0 +1,57 @@
+name: Publish to PyPI
+
+# 通过 OIDC Trusted Publishing 发布,无需 PyPI API token。
+# 前置:在 PyPI 项目设置里注册 Trusted Publisher(见 README / 推广记忆)。
+# 触发:发布 GitHub Release,或手动 workflow_dispatch。
+# 注意:PyPI 不允许重复上传同一版本号,发新版前先 bump pyproject 的 version。
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+          pip install pytest
+
+      - name: Test
+        # 只跑 test_*.py;e2e_check / rebuild_vectors 需 API key,不在此跑
+        run: pytest tests/ -q
+
+      - name: Build distributions
+        run: |
+          python -m pip install --upgrade build
+          python -m build
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: pypi # 须与 PyPI Trusted Publisher 表单里的 environment name 一致
+    permissions:
+      id-token: write # OIDC trusted publishing
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
