@@ -1,5 +1,7 @@
 # AI Memory MCP Server
 
+<!-- mcp-name: io.github.xiangzi1126/ai-agent-memory-mcp -->
+
 > Agent-agnostic persistent memory as an MCP Server — local-first: memories travel with your project in `.ai-memory/`, shared across Claude Code / Qoder / Cursor.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
