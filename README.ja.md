@@ -30,6 +30,8 @@ cd <clone ディレクトリ>\ai_memory_mcp
 python -m pip install -r requirements.txt
 ```
 
+> または PyPI から直接インストール(clone 不要): `pip install ai-agent-memory-mcp`。
+
 ## Embedding 設定(任意の OpenAI 互換サービス)
 
 embedding 層は汎用 OpenAI 互換クライアントで、**火山方舟 / SiliconFlow / OpenAI / 任意の互換サービス** に対応。初回実行時に `.ai-memory/config.yml` にデフォルト設定が生成されるので、必要に応じて編集。
@@ -97,6 +99,8 @@ embedding:
 claude mcp add ai-memory -s user -e PYTHONPATH=<clone ディレクトリ>\ai_memory_mcp -- python -m ai_memory --agent claude-code --project-from-cwd
 ```
 `<clone ディレクトリ>` は実際の clone パスに置き換え。Qoder / Cursor も同様、`--agent` を変更するだけ。
+
+> PyPI からインストールした場合(`pip install ai-agent-memory-mcp`)は `PYTHONPATH` 不要: `claude mcp add ai-memory -s user -- python -m ai_memory --agent claude-code --project-from-cwd`
 
 ## MCP ツール
 - `remember(title, content, category, tags?, scope?)` — 保存(3 層同期、自動 embedding)

@@ -32,6 +32,8 @@ cd <clone 目录>\ai_memory_mcp
 python -m pip install -r requirements.txt
 ```
 
+> 也可直接从 PyPI 安装(无需 clone):`pip install ai-agent-memory-mcp`。
+
 ## 配置 Embedding(任意 OpenAI 兼容服务)
 
 ai-memory 的 embedding 层是通用 OpenAI 兼容客户端,**火山方舟 / 硅基流动 / OpenAI / 任何兼容服务都能用**。首次运行会在 `.ai-memory/config.yml` 生成默认配置,按需修改即可。
@@ -99,6 +101,8 @@ embedding:
 claude mcp add ai-memory -s user -e PYTHONPATH=<clone 目录>\ai_memory_mcp -- python -m ai_memory --agent claude-code --project-from-cwd
 ```
 `<clone 目录>` 换成你 clone 的实际路径。Qoder / Cursor 同理,改 `--agent` 即可。
+
+> 从 PyPI 装的(`pip install ai-agent-memory-mcp`)省去 `PYTHONPATH`:`claude mcp add ai-memory -s user -- python -m ai_memory --agent claude-code --project-from-cwd`
 
 ## MCP 工具
 - `remember(title, content, category, tags?, scope?)` - 存记忆(三处同步,自动 embed)

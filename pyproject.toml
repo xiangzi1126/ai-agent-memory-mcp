@@ -3,7 +3,7 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "ai-memory-mcp"
+name = "ai-agent-memory-mcp"
 version = "0.1.0"
 description = "独立于具体 Agent 的持久化记忆层 (MCP Server),可被 Claude Code / Qoder / Cursor 复用"
 readme = "README.md"

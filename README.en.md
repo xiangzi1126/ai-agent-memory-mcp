@@ -30,6 +30,8 @@ cd <clone dir>\ai_memory_mcp
 python -m pip install -r requirements.txt
 ```
 
+> Or install directly from PyPI (no clone needed): `pip install ai-agent-memory-mcp`.
+
 ## Configure Embedding (any OpenAI-compatible service)
 
 The embedding layer is a generic OpenAI-compatible client — **Volcengine / SiliconFlow / OpenAI / any compatible service works**. On first run a default config is generated at `.ai-memory/config.yml`; edit as needed.
@@ -97,6 +99,8 @@ Candidates are expanded to `top_k*3`, then fused down to `top_k`.
 claude mcp add ai-memory -s user -e PYTHONPATH=<clone dir>\ai_memory_mcp -- python -m ai_memory --agent claude-code --project-from-cwd
 ```
 Replace `<clone dir>` with your actual clone path. Qoder / Cursor are the same — just change `--agent`.
+
+> If installed from PyPI (`pip install ai-agent-memory-mcp`), drop `PYTHONPATH`: `claude mcp add ai-memory -s user -- python -m ai_memory --agent claude-code --project-from-cwd`
 
 ## MCP tools
 - `remember(title, content, category, tags?, scope?)` — store (three-way sync, auto-embed)
