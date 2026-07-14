@@ -1,6 +1,6 @@
 ---
 name: Bug 报告 / Bug report
-about: 报告 ai-memory-mcp 的问题
+about: 报告 ai-agent-memory-mcp 的问题
 title: "[Bug] "
 labels: bug
 ---
@@ -8,7 +8,7 @@ labels: bug
 ## 环境 / Environment
 - OS:
 - Python 版本:
-- ai-memory-mcp 版本:
+- ai-agent-memory-mcp 版本:
 - MCP 客户端(Claude Code / Qoder / Cursor / 其他):
 - Embedding 服务(火山 / 硅基流动 / OpenAI / 其他):
 

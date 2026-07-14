@@ -38,10 +38,10 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/xiangzi1126/ai-memory-mcp"
-Repository = "https://github.com/xiangzi1126/ai-memory-mcp"
-Issues = "https://github.com/xiangzi1126/ai-memory-mcp/issues"
-Changelog = "https://github.com/xiangzi1126/ai-memory-mcp/releases"
+Homepage = "https://github.com/xiangzi1126/ai-agent-memory-mcp"
+Repository = "https://github.com/xiangzi1126/ai-agent-memory-mcp"
+Issues = "https://github.com/xiangzi1126/ai-agent-memory-mcp/issues"
+Changelog = "https://github.com/xiangzi1126/ai-agent-memory-mcp/releases"
 
 [project.scripts]
 ai-memory = "ai_memory.__main__:main"
