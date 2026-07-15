@@ -3,7 +3,7 @@
   "name": "io.github.xiangzi1126/ai-agent-memory-mcp",
   "title": "AI Agent Memory",
   "description": "Agent-agnostic persistent memory MCP server. Local-first: memories travel with your project.",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "repository": {
     "url": "https://github.com/xiangzi1126/ai-agent-memory-mcp",
     "source": "github"
@@ -13,7 +13,7 @@
     {
       "registryType": "pypi",
       "identifier": "ai-agent-memory-mcp",
-      "version": "0.1.1",
+      "version": "0.2.0",
       "transport": {
         "type": "stdio"
       }
