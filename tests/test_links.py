@@ -3,9 +3,9 @@ import shutil
 import tempfile
 from pathlib import Path
 
-from ai_memory.links import extract_links, resolve_links
-from ai_memory.schema import Memory
-from ai_memory.store import Store
+from ai_agent_memory_mcp.links import extract_links, resolve_links
+from ai_agent_memory_mcp.schema import Memory
+from ai_agent_memory_mcp.store import Store
 
 
 def _store():

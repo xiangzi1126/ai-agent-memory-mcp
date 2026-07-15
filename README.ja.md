@@ -1,20 +1,25 @@
 # AI Memory MCP Server
 
+<!-- mcp-name: io.github.xiangzi1126/ai-agent-memory-mcp -->
+
+> エージェント非依存の永続メモリレイヤー(MCP サーバー)— ローカルファースト:メモリは `.aamm/` に保存され、プロジェクトと共に移動。Claude Code / Qoder / Cursor 間で共有。
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://www.python.org/)
 [![MCP](https://img.shields.io/badge/MCP-Server-purple.svg)](https://modelcontextprotocol.io/)
+[![PyPI](https://img.shields.io/pypi/v/ai-agent-memory-mcp.svg)](https://pypi.org/project/ai-agent-memory-mcp/)
 
-[中文](README.md) | [English](README.en.md)
+[中文](README.zh.md) | [English](README.md)
 
-特定のエージェントに依存しない永続メモリレイヤー(MCP サーバー)。Local-first - 記憶はプロジェクトの `.ai-memory/` に保存され、Claude Code / Qoder / Cursor 間で共有されます。
+特定のエージェントに依存しない永続メモリレイヤー(MCP サーバー)。Claude Code / Qoder / Cursor など任意の MCP クライアントで再利用可能。メモリは各プロジェクトの `.aamm/` に保存されプロジェクトと共に移動;同じプロジェクトを開くエージェント間でメモリを共有し、`source_agent` スタンプで書き手を区別。
 
 ## アーキテクチャ
 - **SQLite**: 構造化主ソース(CRUD + FTS5 キーワード検索)
-- **Chroma(組み込み)**: ベクトル検索(`.ai-memory/chroma/` に永続化)
-- **Embedding**: 任意の OpenAI 互換サービス(火山方舟 / SiliconFlow / OpenAI / その他)。デフォルトは火山方舟 `doubao-embedding-vision`(下記設定参照)
-- **Markdown ミラー**: 各メモリは `.ai-memory/memories/<category>/<id>.md` にも書き出され、人が読める・編集できる
+- **Chroma(組み込み)**: ベクトル検索(`.aamm/chroma/` に永続化)
+- **Embedding**: 任意の OpenAI 互換サービス(火山方舟 / SiliconFlow / OpenAI / その他)。デフォルトは火山方舟 `doubao-embedding-vision`
+- **Markdown ミラー**: 各メモリは `.aamm/memories/<category>/<id>.md` にも書き出され、人が読める・編集できる
 
-3 層は `id` で紐付く。メモリは**各プロジェクトの `.ai-memory/` ディレクトリ**に置かれ、プロジェクトと共に移動。同じプロジェクトを開くエージェント間でメモリを共有し、`source_agent` スタンプで書き手を区別。
+3 層は `id` で紐付く。
 
 ## メモリ分類
 | category | 用途 |
@@ -25,18 +30,25 @@
 | `agent` | エージェント連携(何をしたか/引き継ぎ事項) |
 
 ## インストール
+
+PyPI から:
 ```powershell
-cd <clone ディレクトリ>\ai_memory_mcp
-python -m pip install -r requirements.txt
+pip install ai-agent-memory-mcp
 ```
 
-> または PyPI から直接インストール(clone 不要): `pip install ai-agent-memory-mcp`。
+ソースから:
+```powershell
+cd ai_agent_memory_mcp
+pip install .          # または: pip install -e .   (開発用 editable)
+```
+
+Python 3.11+ が必要。
 
 ## Embedding 設定(任意の OpenAI 互換サービス)
 
-embedding 層は汎用 OpenAI 互換クライアントで、**火山方舟 / SiliconFlow / OpenAI / 任意の互換サービス** に対応。初回実行時に `.ai-memory/config.yml` にデフォルト設定が生成されるので、必要に応じて編集。
+embedding 層は汎用 OpenAI 互換クライアントで、火山方舟 / SiliconFlow / OpenAI / 任意の互換サービスに対応。初回実行時に `.aamm/config.yml` にデフォルト設定が生成されるので、必要に応じて編集。
 
-### 設定フィールド(`.ai-memory/config.yml` の `embedding` セクション)
+### 設定フィールド(`.aamm/config.yml` の `embedding` セクション)
 | フィールド | 説明 |
 |---|---|
 | `provider` | 識別子(記録用、動作に影響しない) |
@@ -84,7 +96,7 @@ embedding:
 
 **その他の OpenAI 互換サービス**: `base_url` / `model` / `api_key_env` / `dim` を設定するだけ。
 
-> embedding モデル切替後、旧ベクトルと次元が合わない場合あり。`.ai-memory/chroma/` を空にして再 `remember`、または `python tests/rebuild_vectors.py` を実行。
+> embedding モデル切替後、旧ベクトルと次元が合わない場合あり。`.aamm/chroma/` を空にして再 `remember`、または `python tests/rebuild_vectors.py` を実行。
 
 ## 検索メカニズム
 `recall` は三方式融合検索で命中率を向上:
@@ -92,27 +104,76 @@ embedding:
 - **キーワード検索**(重み 0.25): SQLite FTS5 trigram
 - **タイトル/タグ一致**(重み 0.15): クエリがタイトルにあれば +0.15、タグにあれば +0.075
 
-候補を `top_k*3` に拡大し、融合後に `top_k` を取得。
+候補を `top_k*3` に拡大し、融合後に `top_k` を取得。クエリが FTS5 特殊文字(`.`、`*`、`"`、`-` など)を含む場合、キーワード分岐は `LIKE` 部分一致にフォールバックし、エラーにならない。
 
-## Claude Code への接続(user scope;コード共有、プロジェクト別データ)
-```powershell
-claude mcp add ai-memory -s user -e PYTHONPATH=<clone ディレクトリ>\ai_memory_mcp -- python -m ai_memory --agent claude-code --project-from-cwd
+## ワークジャーナル
+
+検索可能なメモリとは別に、aamm は人が読むワークジャーナルを保持する。ユーザーリクエスト完了後、エージェントは `journal_entry()` を呼び出し、聞かれたこと / 行ったこと / 未解決の質問を記録。ジャーナルは人がタイムラインを読むためのもの;`recall` はこれを検索**しない**。過去のやり取りを復元する必要がある場合のみ `search_journal()` をフォールバックで使用。
+
+ジャーナルは `.aamm/logs/` に書き出される:
+- `journal.db` — 単一 SQLite ストア(検索ソース、全日付をまたぐ)
+- `YYYY-MM-DD.md` — 1 日 1 つの Markdown ファイル、追記型タイムライン
+
 ```
-`<clone ディレクトリ>` は実際の clone パスに置き換え。Qoder / Cursor も同様、`--agent` を変更するだけ。
-
-> PyPI からインストールした場合(`pip install ai-agent-memory-mcp`)は `PYTHONPATH` 不要: `claude mcp add ai-memory -s user -- python -m ai_memory --agent claude-code --project-from-cwd`
+.aamm/logs/
+├── journal.db        # 検索ソース(全日付)
+├── 2026-07-14.md     # 日次タイムライン
+└── 2026-07-15.md
+```
 
 ## MCP ツール
-- `remember(title, content, category, tags?, scope?)` — 保存(3 層同期、自動 embedding)
-- `recall(query, category?, top_k=5)` — 融合検索(ベクトル + キーワード + タイトル一致)
-- `get_memory(id)` — 1 件取得
-- `search_memories(category?, tag?, agent?)` — 構造化フィルタ
-- `update_memory(id, ...)` — 更新(再 embedding + md 更新)
-- `forget(id)` — 削除(3 層同期)
-- `list_memories(category?)` — 一覧
-- `who_am_i()` — 現在のエージェント + プロジェクト情報
 
-## 管理 CLI(後続フェーズ)
+メモリ(8):
+- `remember(title, content, category, tags?, scope?)` - 保存(3 層同期、自動 embedding)
+- `recall(query, category?, top_k=5)` - 融合検索(ベクトル + キーワード + タイトル一致)
+- `get_memory(id)` - 1 件取得
+- `search_memories(category?, tag?, agent?)` - 構造化フィルタ
+- `update_memory(id, ...)` - 更新(再 embedding + md 更新)
+- `forget(id)` - 削除(3 層同期)
+- `list_memories(category?)` - 一覧
+- `who_am_i()` - 現在のエージェント + プロジェクト情報
+
+ジャーナル(3):
+- `journal_entry(question, answer_summary, key_points?, open_question?, session_id?)` - タイムラインエントリを記録
+- `search_journal(query, date_from?, date_to?, agent?, limit=10)` - ジャーナルのフォールバック検索
+- `setup_profile(user_name)` - ユーザー名を設定(ジャーナルに表示)
+
+## 管理 CLI
 ```powershell
-python -m ai_memory.cli init|export|sync|check
+python -m ai_agent_memory_mcp.cli init                  # 現在のプロジェクトに .aamm を初期化
+python -m ai_agent_memory_mcp.cli status                # ストア概要(分類/ベクトル/md/ジャーナル)
+python -m ai_agent_memory_mcp.cli export [--dir DIR]    # 全メモリを Markdown にエクスポート
+python -m ai_agent_memory_mcp.cli sync                  # Markdown から SQLite + Chroma を再構築
+python -m ai_agent_memory_mcp.cli check                 # 整合性チェック(db / md / chroma)
+python -m ai_agent_memory_mcp.cli journal [--limit N]   # 最近のジャーナルを表示
 ```
+
+## Claude Code への接続(user scope;コード共有、プロジェクト別データ)
+
+PyPI から(`PYTHONPATH` 不要):
+```powershell
+claude mcp add aamm -s user -- python -m ai_agent_memory_mcp --agent claude-code --project-from-cwd
+```
+
+ソース clone の場合、`-e PYTHONPATH=<clone ディレクトリ>\ai_agent_memory_mcp` を追加:
+```powershell
+claude mcp add aamm -s user -e PYTHONPATH=<clone ディレクトリ>\ai_agent_memory_mcp -- python -m ai_agent_memory_mcp --agent claude-code --project-from-cwd
+```
+
+Qoder / Cursor も同様、`--agent` を変更するだけ。
+
+## データレイアウト
+```
+.aamm/
+├── memory.db                    # SQLite: 構造化メモリ + FTS5
+├── chroma/                      # Chroma ベクトルストア
+├── memories/<category>/<id>.md  # Markdown ミラー(編集可能)
+├── logs/
+│   ├── journal.db               # ワークジャーナル(検索ソース)
+│   └── YYYY-MM-DD.md            # 日次ジャーナルタイムライン
+├── config.yml                   # embedding 設定
+└── profile.json                 # ユーザー名
+```
+
+## ライセンス
+MIT

@@ -2,58 +2,66 @@
 
 <!-- mcp-name: io.github.xiangzi1126/ai-agent-memory-mcp -->
 
-> Agent-agnostic persistent memory as an MCP Server — local-first: memories travel with your project in `.ai-memory/`, shared across Claude Code / Qoder / Cursor.
+> Agent-agnostic persistent memory as an MCP Server — local-first: memories travel with your project in `.aamm/`, shared across Claude Code / Qoder / Cursor.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://www.python.org/)
 [![MCP](https://img.shields.io/badge/MCP-Server-purple.svg)](https://modelcontextprotocol.io/)
+[![PyPI](https://img.shields.io/pypi/v/ai-agent-memory-mcp.svg)](https://pypi.org/project/ai-agent-memory-mcp/)
 
-[English](README.en.md) | [日本語](README.ja.md)
+[中文](README.zh.md) | [日本語](README.ja.md)
 
-独立于具体 Agent 的持久化记忆层,以 MCP Server 形式提供。可被 Claude Code / Qoder / Cursor 等任何 MCP 客户端复用。
+An agent-agnostic persistent memory layer exposed as an MCP Server. Any MCP client — Claude Code, Qoder, Cursor — can reuse it. Memories live in each project's `.aamm/` directory and travel with the project; different agents working the same project share one memory store, with a `source_agent` stamp distinguishing writers.
 
-## 架构
-- **SQLite**:结构化主源(CRUD + FTS5 关键词检索)
-- **Chroma 嵌入式**:向量检索(持久化到 `.ai-memory/chroma/`)
-- **Embedding**:任意 OpenAI 兼容服务(火山方舟 / 硅基流动 / OpenAI / 其他),默认火山 `doubao-embedding-vision`;见下文配置
-- **Markdown 镜像**:每条记忆同步写 `.ai-memory/memories/<category>/<id>.md`,人工可读可编辑
+## Architecture
+- **SQLite** — structured source of truth (CRUD + FTS5 keyword search)
+- **Chroma (embedded)** — vector retrieval, persisted to `.aamm/chroma/`
+- **Embedding** — any OpenAI-compatible service (Volcengine / SiliconFlow / OpenAI / others); defaults to Volcengine `doubao-embedding-vision`
+- **Markdown mirror** — each memory is also written to `.aamm/memories/<category>/<id>.md`, human-readable and editable
 
-三层用 `id` 关联。记忆存于**各项目的 `.ai-memory/` 目录**,跟项目走;不同 Agent 连同一项目时共享同一记忆库,`source_agent` 戳区分写入者。
+The three layers are joined by `id`.
 
-## 记忆分类
-| category | 用途 |
+## Memory categories
+| category | use |
 |---|---|
-| `user` | 用户偏好(技术背景/开发习惯/回答偏好) |
-| `project` | 项目知识(架构/选型/目录/设计决策) |
-| `process` | 工作过程(已解决/Bug/排查/经验) |
-| `agent` | Agent 协作(谁做过什么/接手须知) |
+| `user` | user preferences (tech background / dev habits / answer style) |
+| `project` | project knowledge (architecture / stack / layout / design decisions) |
+| `process` | work process (solved issues / bugs / debugging / lessons) |
+| `agent` | agent collaboration (what was done / handoff notes) |
 
-## 安装
+## Install
+
+From PyPI:
 ```powershell
-cd <clone 目录>\ai_memory_mcp
-python -m pip install -r requirements.txt
+pip install ai-agent-memory-mcp
 ```
 
-> 也可直接从 PyPI 安装(无需 clone):`pip install ai-agent-memory-mcp`。
+From source:
+```powershell
+cd ai_agent_memory_mcp
+pip install .          # or: pip install -e .   (editable, for development)
+```
 
-## 配置 Embedding(任意 OpenAI 兼容服务)
+Requires Python 3.11+.
 
-ai-memory 的 embedding 层是通用 OpenAI 兼容客户端,**火山方舟 / 硅基流动 / OpenAI / 任何兼容服务都能用**。首次运行会在 `.ai-memory/config.yml` 生成默认配置,按需修改即可。
+## Configure embedding (any OpenAI-compatible service)
 
-### 配置字段(`.ai-memory/config.yml` 的 `embedding` 段)
-| 字段 | 说明 |
+The embedding layer is a generic OpenAI-compatible client — Volcengine / SiliconFlow / OpenAI / any compatible service works. On first run a default config is generated at `.aamm/config.yml`; edit as needed.
+
+### Fields (`embedding` section of `.aamm/config.yml`)
+| field | meaning |
 |---|---|
-| `provider` | 标识(仅记录用,不影响逻辑) |
-| `model` | embedding 模型名 |
-| `base_url` | OpenAI 兼容端点 |
-| `api_key_env` | 读哪个环境变量拿 key |
-| `dim` | 向量维度(须与模型一致) |
+| `provider` | label (informational only) |
+| `model` | embedding model name |
+| `base_url` | OpenAI-compatible endpoint |
+| `api_key_env` | which env var holds the key |
+| `dim` | vector dim (must match the model) |
 
-在项目根 `.env` 配对应 key,再改 `config.yml` 的 `embedding` 段。
+Put the key in the project root `.env`, then edit the `embedding` section of `config.yml`.
 
-### 示例
+### Examples
 
-**火山方舟 doubao-embedding-vision**(默认;Agent/Coding Plan 须走 Plan 端点 `/api/plan/v3`,标准 `/api/v3` 会 401)
+**Volcengine doubao-embedding-vision** (default; Agent/Coding Plan keys must use the Plan endpoint `/api/plan/v3` — standard `/api/v3` returns 401)
 ```yaml
 embedding:
   provider: volcengine
@@ -62,9 +70,9 @@ embedding:
   api_key_env: VOLCENGINE_API_KEY
   dim: 2048
 ```
-`.env`:`VOLCENGINE_API_KEY=...`
+`.env`: `VOLCENGINE_API_KEY=...`
 
-**硅基流动 bge-large-zh**(中文文本专精)
+**SiliconFlow bge-large-zh** (Chinese-text optimized)
 ```yaml
 embedding:
   provider: siliconflow
@@ -73,7 +81,7 @@ embedding:
   api_key_env: SILICONFLOW_API_KEY
   dim: 1024
 ```
-`.env`:`SILICONFLOW_API_KEY=...`
+`.env`: `SILICONFLOW_API_KEY=...`
 
 **OpenAI**
 ```yaml
@@ -84,39 +92,88 @@ embedding:
   api_key_env: OPENAI_API_KEY
   dim: 1536
 ```
-`.env`:`OPENAI_API_KEY=...`
+`.env`: `OPENAI_API_KEY=...`
 
-**任何其他 OpenAI 兼容服务**:填对应 `base_url` / `model` / `api_key_env` / `dim` 即可。
+**Any other OpenAI-compatible service**: just fill in `base_url` / `model` / `api_key_env` / `dim`.
 
-> 切换 embedding 模型后,旧向量维度可能不匹配;清空 `.ai-memory/chroma/` 重新 `remember`,或跑 `python tests/rebuild_vectors.py`。
+> After switching embedding model, old vectors may mismatch in dimension; clear `.aamm/chroma/` and re-`remember`, or run `python tests/rebuild_vectors.py`.
 
-## 检索机制
-`recall` 用三路融合检索,提升命中率:
-- **向量检索**(权重 0.6):Chroma cosine;embedding 内容为 `title + tags + content` 拼接,标题/标签信息进入向量
-- **关键词检索**(权重 0.25):SQLite FTS5 trigram
-- **标题/标签匹配**(权重 0.15):查询词出现在标题(+0.15)或标签(+0.075)时加分
+## Retrieval
+`recall` uses three-way fused retrieval to maximize hit rate:
+- **Vector** (weight 0.6): Chroma cosine; embeddings are computed from `title + tags + content`, so title/tag signal enters the vector
+- **Keyword** (weight 0.25): SQLite FTS5 trigram
+- **Title/tag match** (weight 0.15): +0.15 if the query appears in the title, +0.075 if in a tag
 
-候选扩大到 `top_k*3`,三路融合后取 `top_k`。
+Candidates are expanded to `top_k*3`, then fused down to `top_k`. If the query contains FTS5 special characters (`.`, `*`, `"`, `-`, ...), the keyword branch falls back to `LIKE` substring matching instead of erroring.
 
-## 接入 Claude Code(user scope,所有项目共用代码、各自项目数据)
-```powershell
-claude mcp add ai-memory -s user -e PYTHONPATH=<clone 目录>\ai_memory_mcp -- python -m ai_memory --agent claude-code --project-from-cwd
+## Work journal
+
+Besides searchable memories, aamm keeps a human-readable work journal. After completing a user request, the agent calls `journal_entry()` to log what was asked / what it did / any open question. Journals are for people reading a timeline; `recall` does **not** search them. Use `search_journal()` only as a fallback to recover "what happened in a past interaction".
+
+Journals are written to `.aamm/logs/`:
+- `journal.db` — single SQLite store (the search source, spans all dates)
+- `YYYY-MM-DD.md` — one Markdown file per day, append-only timeline
+
 ```
-`<clone 目录>` 换成你 clone 的实际路径。Qoder / Cursor 同理,改 `--agent` 即可。
-
-> 从 PyPI 装的(`pip install ai-agent-memory-mcp`)省去 `PYTHONPATH`:`claude mcp add ai-memory -s user -- python -m ai_memory --agent claude-code --project-from-cwd`
-
-## MCP 工具
-- `remember(title, content, category, tags?, scope?)` - 存记忆(三处同步,自动 embed)
-- `recall(query, category?, top_k=5)` - 混合检索(向量 + 关键词 + 标题匹配)
-- `get_memory(id)` - 取单条
-- `search_memories(category?, tag?, agent?)` - 结构化过滤
-- `update_memory(id, ...)` - 更新(重算 embed + 刷新 md)
-- `forget(id)` - 删除(三处同步)
-- `list_memories(category?)` - 列出
-- `who_am_i()` - 当前 agent + 项目上下文
-
-## 管理 CLI(后续阶段)
-```powershell
-python -m ai_memory.cli init|export|sync|check
+.aamm/logs/
+├── journal.db        # search source (all dates)
+├── 2026-07-14.md     # per-day timeline
+└── 2026-07-15.md
 ```
+
+## MCP tools
+
+Memory (8):
+- `remember(title, content, category, tags?, scope?)` — store (three-way sync, auto-embed)
+- `recall(query, category?, top_k=5)` — fused retrieval (vector + keyword + title match)
+- `get_memory(id)` — get one
+- `search_memories(category?, tag?, agent?)` — structured filter
+- `update_memory(id, ...)` — update (re-embed + refresh md)
+- `forget(id)` — delete (three-way sync)
+- `list_memories(category?)` — list
+- `who_am_i()` — current agent + project context
+
+Journal (3):
+- `journal_entry(question, answer_summary, key_points?, open_question?, session_id?)` — log a timeline entry
+- `search_journal(query, date_from?, date_to?, agent?, limit=10)` — fallback search over journals
+- `setup_profile(user_name)` — set the user name (shown in journals)
+
+## Management CLI
+```powershell
+python -m ai_agent_memory_mcp.cli init                  # initialize .aamm in the current project
+python -m ai_agent_memory_mcp.cli status                # store overview (categories / vectors / md / journal)
+python -m ai_agent_memory_mcp.cli export [--dir DIR]    # export all memories to Markdown
+python -m ai_agent_memory_mcp.cli sync                  # rebuild SQLite + Chroma from Markdown
+python -m ai_agent_memory_mcp.cli check                 # consistency check (db / md / chroma)
+python -m ai_agent_memory_mcp.cli journal [--limit N]   # show recent journal entries
+```
+
+## Wire into Claude Code (user scope; shared code, per-project data)
+
+From PyPI (no `PYTHONPATH` needed):
+```powershell
+claude mcp add aamm -s user -- python -m ai_agent_memory_mcp --agent claude-code --project-from-cwd
+```
+
+From a source clone, add `-e PYTHONPATH=<clone dir>\ai_agent_memory_mcp`:
+```powershell
+claude mcp add aamm -s user -e PYTHONPATH=<clone dir>\ai_agent_memory_mcp -- python -m ai_agent_memory_mcp --agent claude-code --project-from-cwd
+```
+
+Qoder / Cursor are the same — just change `--agent`.
+
+## Data layout
+```
+.aamm/
+├── memory.db                    # SQLite: structured memories + FTS5
+├── chroma/                      # Chroma vector store
+├── memories/<category>/<id>.md  # Markdown mirror (editable)
+├── logs/
+│   ├── journal.db               # work journal (search source)
+│   └── YYYY-MM-DD.md            # per-day journal timeline
+├── config.yml                   # embedding config
+└── profile.json                 # user name
+```
+
+## License
+MIT

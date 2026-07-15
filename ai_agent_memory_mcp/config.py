@@ -1,4 +1,4 @@
-"""配置:定位项目 .ai-memory 目录、加载 config.yml、读 embedding API key。"""
+"""配置:定位项目 .aamm 目录、加载 config.yml、读 embedding API key。"""
 from __future__ import annotations
 
 import os
@@ -12,10 +12,11 @@ DB_FILENAME = "memory.db"
 CHROMA_DIRNAME = "chroma"
 MEMORIES_DIRNAME = "memories"
 LOG_DIRNAME = "logs"
+PROFILE_FILENAME = "profile.json"
 
 # 默认 embedding:火山方舟 doubao-embedding-vision(2048 维,多模态,纯文本亦可)。
 # Agent/Coding Plan 的 key 须走 Plan 端点 /api/plan/v3(标准 /api/v3 会 401)。
-# 若想切硅基流动 bge-large-zh(文本专精)或 OpenAI,改 .ai-memory/config.yml。
+# 若想切硅基流动 bge-large-zh(文本专精)或 OpenAI,改 .aamm/config.yml。
 DEFAULT_EMBEDDING_MODEL = "doubao-embedding-vision"
 DEFAULT_EMBEDDING_DIM = 2048
 DEFAULT_EMBEDDING_BASE_URL = "https://ark.cn-beijing.volces.com/api/plan/v3"
@@ -30,12 +31,13 @@ class MemoryConfig:
     def __init__(self, project_root: Path, agent: str = "unknown"):
         self.project_root = Path(project_root).resolve()
         self.agent = agent
-        self.data_dir = self.project_root / ".ai-memory"
+        self.data_dir = self.project_root / ".aamm"
         self.db_path = self.data_dir / DB_FILENAME
         self.chroma_dir = self.data_dir / CHROMA_DIRNAME
         self.memories_dir = self.data_dir / MEMORIES_DIRNAME
         self.log_dir = self.data_dir / LOG_DIRNAME
         self.config_path = self.data_dir / CONFIG_FILENAME
+        self.profile_path = self.data_dir / PROFILE_FILENAME
 
         self._ensure_dirs()
         load_dotenv(self.project_root / ".env")
@@ -56,7 +58,7 @@ class MemoryConfig:
                 "dim": DEFAULT_EMBEDDING_DIM,
                 "base_url": DEFAULT_EMBEDDING_BASE_URL,
                 "api_key_env": DEFAULT_API_KEY_ENV,
-            }
+            },
         }
 
     def _load_config(self) -> dict:
@@ -101,9 +103,9 @@ class MemoryConfig:
 
 
 def find_project_root(start: Path | None = None) -> Path:
-    """向上查找含 .ai-memory 或 .git 的目录;找不到则用 cwd。"""
+    """向上查找含 .aamm 或 .git 的目录;找不到则用 cwd。"""
     p = (start or Path.cwd()).resolve()
     for parent in [p, *p.parents]:
-        if (parent / ".ai-memory").exists() or (parent / ".git").exists():
+        if (parent / ".aamm").exists() or (parent / ".git").exists():
             return parent
     return Path.cwd()

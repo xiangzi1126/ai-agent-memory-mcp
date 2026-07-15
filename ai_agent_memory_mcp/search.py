@@ -32,6 +32,8 @@ def hybrid_search(
     scores: dict[str, float] = {}
     candidates: set[str] = set()
     q_lower = query.lower().strip()
+    if not q_lower:
+        return []  # 空/空白 query 短路:不调 embedding/FTS,避免无意义 API 调用
     candidate_k = max(top_k * 3, 15)
 
     # 1. 向量分支:distance 越小越相似 -> 归一化后反转

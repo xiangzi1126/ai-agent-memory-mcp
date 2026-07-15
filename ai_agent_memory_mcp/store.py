@@ -147,15 +147,31 @@ class Store:
             return [self._row_to_memory(r) for r in rows]
 
     def fts_search(self, query: str, limit: int = 10) -> list[tuple[str, float]]:
-        """关键词检索,返回 (id, rank);rank 越小越相关(BM25)。"""
-        if not query.strip():
+        """关键词检索,返回 (id, rank);rank 越小越相关(BM25)。
+
+        query 含 FTS5 特殊字符(点号/星号/引号/连字符等)触发 MATCH 语法错误时,
+        退回 LIKE 子串匹配并返回 (id, 0.0);与 journal.py 的兜底策略一致,
+        避免 hybrid_search 因关键词分支异常而整体崩溃。
+        """
+        q = (query or "").strip()
+        if not q:
             return []
         with self._conn() as c:
-            rows = c.execute(
-                "SELECT id, rank FROM memories_fts WHERE memories_fts MATCH ? ORDER BY rank LIMIT ?",
-                (query, limit),
-            ).fetchall()
-            return [(r["id"], float(r["rank"])) for r in rows]
+            try:
+                rows = c.execute(
+                    "SELECT id, rank FROM memories_fts WHERE memories_fts MATCH ? ORDER BY rank LIMIT ?",
+                    (query, limit),
+                ).fetchall()
+                return [(r["id"], float(r["rank"])) for r in rows]
+            except sqlite3.OperationalError:
+                # FTS5 语法错误(特殊字符如 . * " - ) -> LIKE 子串兜底
+                rows = c.execute(
+                    "SELECT id FROM memories "
+                    "WHERE title LIKE ? OR content LIKE ? "
+                    "ORDER BY updated_at DESC LIMIT ?",
+                    (f"%{q}%", f"%{q}%", limit),
+                ).fetchall()
+                return [(r["id"], 0.0) for r in rows]
 
     def all_ids(self) -> list[str]:
         with self._conn() as c:

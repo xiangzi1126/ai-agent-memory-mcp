@@ -1,19 +1,22 @@
-"""管理 CLI:初始化 / 状态 / 导出 / 同步 / 一致性检查。
+"""管理 CLI:初始化 / 状态 / 导出 / 同步 / 一致性检查 / 日记。
 
 用法:
-  python -m ai_memory.cli init      初始化当前项目 .ai-memory
-  python -m ai_memory.cli status    记忆库状态(各分类/向量/Markdown 数量)
-  python -m ai_memory.cli export [--dir DIR]   导出所有记忆为 Markdown
-  python -m ai_memory.cli sync      从 Markdown 重建 SQLite + Chroma
-  python -m ai_memory.cli check     一致性检查(db / md / chroma)
+  python -m ai_agent_memory_mcp.cli init      初始化当前项目 .aamm
+  python -m ai_agent_memory_mcp.cli status    记忆库状态(各分类/向量/Markdown/日记)
+  python -m ai_agent_memory_mcp.cli export [--dir DIR]   导出所有记忆为 Markdown
+  python -m ai_agent_memory_mcp.cli sync      从 Markdown 重建 SQLite + Chroma
+  python -m ai_agent_memory_mcp.cli check     一致性检查(db / md / chroma)
+  python -m ai_agent_memory_mcp.cli journal [--limit N]  查看最近工作日记
 """
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from pathlib import Path
 
 from .config import MemoryConfig, find_project_root
+from .journal import JournalStore
 from .markdown import scan_markdown, write_markdown
 from .store import Store
 
@@ -46,6 +49,8 @@ def cmd_status(args) -> None:
     except Exception as e:
         print(f"vectors  : (unavailable: {e})")
     print(f"markdown : {len(scan_markdown(cfg.memories_dir))}")
+    js = JournalStore(cfg.log_dir).stats()
+    print(f"journal  : {js['entries']} entries ({js['earliest']} ~ {js['latest']})")
 
 
 def cmd_export(args) -> None:
@@ -109,15 +114,42 @@ def cmd_check(args) -> None:
         print("  all consistent ✓")
 
 
+def cmd_journal(args) -> None:
+    """查看工作日记(最近 N 条,按时间倒序)。"""
+    cfg = _cfg()
+    store = JournalStore(cfg.log_dir)
+    entries = store.list(limit=args.limit)
+    if not entries:
+        print("(no journal entries yet)")
+        return
+    for e in entries:
+        print(f"\n## {e['ts']} · {e['agent']}" + (f"（{e['user']}）" if e["user"] else ""))
+        print(f"**Q:** {e['question']}")
+        print(e["answer_summary"])
+        kp = json.loads(e["key_points"] or "[]")
+        if kp:
+            print("**关键点:**")
+            for p in kp:
+                print(f"  - {p}")
+        if e["open_question"]:
+            print(f"**待定:** {e['open_question']}")
+
+
 def main() -> None:
-    parser = argparse.ArgumentParser(prog="ai_memory.cli", description="AI Memory 管理 CLI")
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+    parser = argparse.ArgumentParser(prog="ai_agent_memory_mcp.cli", description="AI Memory 管理 CLI")
     sub = parser.add_subparsers(dest="cmd", required=True)
-    sub.add_parser("init", help="初始化当前项目 .ai-memory")
+    sub.add_parser("init", help="初始化当前项目 .aamm")
     sub.add_parser("status", help="记忆库状态")
     p_export = sub.add_parser("export", help="导出所有记忆为 Markdown")
     p_export.add_argument("--dir", default=None, help="导出目录(默认 memories/ 镜像目录)")
     sub.add_parser("sync", help="从 Markdown 重建 SQLite + Chroma")
     sub.add_parser("check", help="一致性检查 db/md/chroma")
+    p_journal = sub.add_parser("journal", help="查看工作日记(最近 N 条)")
+    p_journal.add_argument("--limit", type=int, default=20, help="显示条数")
     args = parser.parse_args()
     {
         "init": cmd_init,
@@ -125,6 +157,7 @@ def main() -> None:
         "export": cmd_export,
         "sync": cmd_sync,
         "check": cmd_check,
+        "journal": cmd_journal,
     }[args.cmd](args)
 
 

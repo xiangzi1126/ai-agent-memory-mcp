@@ -3,8 +3,8 @@ import shutil
 import tempfile
 from pathlib import Path
 
-from ai_memory.schema import Memory
-from ai_memory.markdown import write_markdown, delete_markdown, read_markdown, scan_markdown
+from ai_agent_memory_mcp.schema import Memory
+from ai_agent_memory_mcp.markdown import write_markdown, delete_markdown, read_markdown, scan_markdown
 
 
 def _dir():

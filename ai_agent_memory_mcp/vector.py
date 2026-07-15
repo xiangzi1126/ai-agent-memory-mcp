@@ -1,7 +1,7 @@
 """Chroma 向量存储层。
 
 预算向量(Embedder)后传入 Chroma,不使用 Chroma 的 EmbeddingFunction
-类型系统,避免版本兼容问题。collection 用 cosine 距离,持久化到 .ai-memory/chroma/。
+类型系统,避免版本兼容问题。collection 用 cosine 距离,持久化到 .aamm/chroma/。
 """
 from __future__ import annotations
 

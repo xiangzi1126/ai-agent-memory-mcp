@@ -1,4 +1,4 @@
-"""启动入口:python -m ai_memory [--agent NAME] [--project PATH | --project-from-cwd]"""
+"""启动入口:python -m ai_agent_memory_mcp [--agent NAME] [--project PATH | --project-from-cwd]"""
 from __future__ import annotations
 
 import argparse
@@ -9,7 +9,7 @@ from .server import init_service, mcp
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(prog="ai_memory", description="AI Memory MCP Server")
+    parser = argparse.ArgumentParser(prog="ai_agent_memory_mcp", description="AI Memory MCP Server")
     parser.add_argument(
         "--agent", default=None,
         help="当前 Agent 标识(claude-code / qoder / cursor),默认 unknown",

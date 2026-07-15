@@ -18,7 +18,7 @@ if not os.getenv("VOLCENGINE_API_KEY"):
     print("      配置后重跑本脚本验证端到端。")
     sys.exit(0)
 
-from ai_memory.server import init_service, remember, recall, list_memories, forget
+from ai_agent_memory_mcp.server import init_service, remember, recall, list_memories, forget
 
 init_service(Path(tempfile.mkdtemp()), "e2e-test")
 

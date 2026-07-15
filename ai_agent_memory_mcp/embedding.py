@@ -3,7 +3,7 @@
 独立于 Chroma 的 EmbeddingFunction 类型系统:直接用 openai client 调用
 OpenAI 兼容的 /embeddings 端点,vector 层预算向量后传给 Chroma,
 避免 chromadb 版本间 EmbeddingFunction API 变动带来的兼容问题。
-默认硅基流动 BAAI/bge-large-zh-v1.5(1024 维),可在 .ai-memory/config.yml 切换。
+默认硅基流动 BAAI/bge-large-zh-v1.5(1024 维),可在 .aamm/config.yml 切换。
 """
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ class Embedder:
         if not api_key:
             raise RuntimeError(
                 "缺少 embedding API key。请在项目根 .env 配置对应 key"
-                "(默认 VOLCENGINE_API_KEY),或改 .ai-memory/config.yml 的 api_key_env。"
+                "(默认 VOLCENGINE_API_KEY),或改 .aamm/config.yml 的 api_key_env。"
             )
         self._client = OpenAI(api_key=api_key, base_url=base_url)
         self._model = model

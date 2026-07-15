@@ -3,9 +3,9 @@ import shutil
 import tempfile
 from pathlib import Path
 
-from ai_memory.schema import Memory
-from ai_memory.store import Store
-from ai_memory.search import hybrid_search
+from ai_agent_memory_mcp.schema import Memory
+from ai_agent_memory_mcp.store import Store
+from ai_agent_memory_mcp.search import hybrid_search
 
 
 class StubVector:
@@ -45,6 +45,46 @@ def test_fusion():
         v = StubVector(results=[(m1.id, 0.1), (m2.id, 0.5)])
         ids = hybrid_search("向量", s, v, top_k=2)
         assert m1.id in ids
+    finally:
+        shutil.rmtree(d)
+
+
+def test_fts_special_chars_fallback_to_like():
+    """query 含 FTS5 特殊字符(点号等)时退回 LIKE,hybrid_search 不崩且仍命中。
+
+    回归:修复前 'aamm v0.2.0' 里的点号触发 fts5: syntax error near ".",
+    异常穿透 recall 工具。向量分支给空结果,迫使命中只能来自关键词分支。
+    """
+    d = tempfile.mkdtemp()
+    try:
+        s = Store(Path(d) / "t.db")
+        m = Memory.create(
+            title="aamm v0.2.0", content="重启验证闭环", category="project", source_agent="cc"
+        )
+        s.upsert(m)
+        v = StubVector(results=[])  # 向量分支无贡献
+        ids = hybrid_search("aamm v0.2.0", s, v, top_k=5)
+        assert m.id in ids
+    finally:
+        shutil.rmtree(d)
+
+
+def test_empty_query_short_circuits():
+    """空/空白 query 直接返回 [],不调 vector(避免无意义 embedding 调用)。"""
+    d = tempfile.mkdtemp()
+    try:
+        s = Store(Path(d) / "t.db")
+        s.upsert(Memory.create(title="x", content="y", category="project", source_agent="cc"))
+        called = []
+
+        class V:
+            def query(self, text, category=None, top_k=5):
+                called.append(text)
+                return []
+
+        assert hybrid_search("   ", s, V(), top_k=3) == []
+        assert hybrid_search("", s, V(), top_k=3) == []
+        assert called == []  # vector.query 未被调用
     finally:
         shutil.rmtree(d)
 

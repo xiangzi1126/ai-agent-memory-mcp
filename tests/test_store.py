@@ -6,8 +6,8 @@ import shutil
 import tempfile
 from pathlib import Path
 
-from ai_memory.schema import Memory
-from ai_memory.store import Store
+from ai_agent_memory_mcp.schema import Memory
+from ai_agent_memory_mcp.store import Store
 
 
 def _store():
